@@ -1,0 +1,7 @@
+[
+  {
+    "mail": "luq@gmail.com",
+    "message": "hola",
+    "date": "28/11/2022, 19:57:59"
+  }
+]

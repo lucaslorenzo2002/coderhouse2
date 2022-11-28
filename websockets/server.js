@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs')
 const { json } = require('express');
 const { Server: HttpServer } = require('http');
 const path = require('path');
@@ -27,23 +28,52 @@ app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
 let products = [];
-let productsExist = false
+let messages = [];
+
+const writeFile = async(data, file) => {
+    try{
+        await fs.promises.writeFile(file, JSON.stringify(data, null, 2));
+        console.log('producto agregado');
+    }catch(err){
+        throw new Error('hubo un error: ' + err)
+    }
+}
+
+const getAll = async() => {
+    try{
+        let productos =  await fs.promises.readFile('productos.txt', 'utf-8');
+        return JSON.parse(productos); 
+        } catch(err){
+            if(err.message.includes('no such file or directory')) return [];
+            console.log('error: ' + err);
+    }
+}
 
 app.get('/productos', (req, res) => {
-    if(products.length > 0){
-        productsExist = true
-    }
     res.render('index', {
-        products, 
-        productsExist})
+        products
+    })
 })
 
 IO.on('connection', socket => {
     console.log(`${socket.id} se ha conectado`);
-
-    socket.on('producto', (data) => {
+    socket.on('product', (data) => {
         products.push(data)
-        IO.sockets.emit('prueba', products) 
+        writeFile(products, 'productos.txt')
+        IO.sockets.emit('new product', products) 
+    })
+
+    socket.on('message', (data) => {
+        messages.push(data)
+        writeFile(messages, 'mensajes.txt')
+        IO.sockets.emit('new message', messages)
+    })
+
+    socket.on('chat: typing', (data) => {
+
+        socket.broadcast.emit('typing', data)
     })
 })
+
+
 
